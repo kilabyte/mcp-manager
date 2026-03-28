@@ -1,6 +1,12 @@
 # MCP Manager
 
+[![Build macOS App](https://github.com/kilabyte/mcp-manager/actions/workflows/build.yml/badge.svg)](https://github.com/kilabyte/mcp-manager/actions/workflows/build.yml)
+
 A native macOS app for managing MCP (Model Context Protocol) servers across all your AI coding tools from a single interface.
+
+## Install
+
+Download the latest `MCP-Manager.zip` from [Releases](https://github.com/kilabyte/mcp-manager/releases), unzip, and drag **MCP Manager.app** to your Applications folder.
 
 ## Features
 
@@ -37,17 +43,17 @@ A native macOS app for managing MCP (Model Context Protocol) servers across all 
 - macOS 15.0+
 - Swift 6.1+
 
-## Build & Run
+## Build from Source
 
 ```bash
-# Build and create .app bundle with dock icon
+# Build and create .app bundle
 ./Scripts/bundle.sh
 
 # Launch
 open ".build/debug/MCP Manager.app"
 ```
 
-Or for quick development iteration:
+For quick development iteration:
 
 ```bash
 swift build && .build/debug/MCPManager
