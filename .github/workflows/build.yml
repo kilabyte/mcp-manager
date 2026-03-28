@@ -1,0 +1,39 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and bundle
+        run: |
+          chmod +x Scripts/bundle.sh
+          Scripts/bundle.sh
+
+      - name: Zip app bundle
+        run: |
+          cd .build/debug
+          zip -r -y "MCP-Manager.zip" "MCP Manager.app"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MCP-Manager
+          path: .build/debug/MCP-Manager.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: .build/debug/MCP-Manager.zip
+          generate_release_notes: true

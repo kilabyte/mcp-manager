@@ -58,15 +58,13 @@ cat > "$CONTENTS/Info.plist" << PLIST
 </plist>
 PLIST
 
-# Generate .icns from the Claude Desktop icon if available
-CLAUDE_APP="/Applications/Claude.app"
-if [ -d "$CLAUDE_APP" ]; then
-    # Claude is an Electron app — icon is electron.icns
-    CLAUDE_ICNS="$CLAUDE_APP/Contents/Resources/electron.icns"
-    if [ -f "$CLAUDE_ICNS" ]; then
-        cp "$CLAUDE_ICNS" "$RESOURCES/AppIcon.icns"
-        echo "Using Claude app icon."
-    fi
+# Copy the app icon
+ICON_SRC="$ROOT/Resources/AppIcon.icns"
+if [ -f "$ICON_SRC" ]; then
+    cp "$ICON_SRC" "$RESOURCES/AppIcon.icns"
+    echo "App icon installed."
+else
+    echo "Warning: Resources/AppIcon.icns not found — app will use default icon."
 fi
 
 # Re-sign the bundle so macOS recognizes the Info.plist and icon
