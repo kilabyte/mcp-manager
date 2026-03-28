@@ -69,6 +69,9 @@ if [ -d "$CLAUDE_APP" ]; then
     fi
 fi
 
+# Re-sign the bundle so macOS recognizes the Info.plist and icon
+codesign --force --sign - "$APP_DIR" 2>/dev/null || true
+
 echo ""
 echo "Done! App bundle created at:"
 echo "  $APP_DIR"
