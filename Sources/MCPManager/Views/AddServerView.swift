@@ -101,7 +101,10 @@ struct AddServerView: View {
                                     else { selectedTools.remove(tool) }
                                 }
                             )) {
-                                Label(tool.displayName, systemImage: tool.sfSymbol)
+                                HStack(spacing: 6) {
+                                    ToolIconView(tool: tool, size: 18)
+                                    Text(tool.displayName)
+                                }
                             }
                             .toggleStyle(.checkbox)
                             .disabled(!tool.isInstalled)

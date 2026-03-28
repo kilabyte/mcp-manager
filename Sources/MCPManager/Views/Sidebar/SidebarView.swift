@@ -32,6 +32,30 @@ struct SidebarView: View {
                         .tag(SidebarSelection.tool(tool))
                 }
             }
+
+            // Keychain
+            Section("Keychain") {
+                Label {
+                    HStack {
+                        Text("Environment Keys")
+                        Spacer()
+                        Text("\(viewModel.valsEntries.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.quaternary, in: Capsule())
+                        if !viewModel.isValsSourcedInZshrc {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.yellow)
+                                .font(.caption)
+                        }
+                    }
+                } icon: {
+                    Image(systemName: "key.fill")
+                }
+                .tag(SidebarSelection.keychain)
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle("MCP Manager")
@@ -62,8 +86,7 @@ private struct ToolRow: View {
                     .frame(width: 8, height: 8)
             }
         } icon: {
-            Image(systemName: tool.sfSymbol)
-                .foregroundStyle(tool.badgeColor)
+            ToolIconView(tool: tool, size: 20)
         }
     }
 }

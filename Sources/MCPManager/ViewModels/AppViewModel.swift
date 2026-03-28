@@ -22,6 +22,7 @@ struct UnifiedServer: Identifiable, Hashable {
 enum SidebarSelection: Hashable {
     case allServers
     case tool(ToolKind)
+    case keychain
 }
 
 @Observable
@@ -40,11 +41,16 @@ final class AppViewModel {
     var showAddServerSheet: Bool = false
     var showInspector: Bool = false
 
+    // Keychain / vals.zsh state
+    var valsEntries: [ValsEntry] = []
+    var isValsSourcedInZshrc: Bool = false
+
     // MARK: - Services
 
     private let configService = ConfigFileService()
     private let discoveryService = DiscoveryService()
     private let syncService = SyncService()
+    private let valsService = ValsFileService()
     let fileWatcher = FileWatcherService()
 
     // MARK: - Computed
@@ -83,6 +89,8 @@ final class AppViewModel {
             servers = unifiedServers
         case .tool(let tool):
             servers = unifiedServers.filter { $0.presentIn.contains(tool) }
+        case .keychain:
+            servers = []
         }
 
         if !searchText.isEmpty {
@@ -117,6 +125,10 @@ final class AppViewModel {
 
         toolConfigs = discoveryService.discoverAllConfigs()
         syncProfiles = (try? syncService.loadProfiles()) ?? []
+
+        // Load keychain entries
+        valsEntries = (try? valsService.loadEntries()) ?? []
+        isValsSourcedInZshrc = valsService.isSourcedInZshrc
 
         setupFileWatchers()
         isLoading = false
@@ -217,6 +229,44 @@ final class AppViewModel {
                     self?.loadAll()
                 }
             }
+        }
+    }
+
+    // MARK: - Keychain (vals.zsh)
+
+    func addValsEntry(_ entry: ValsEntry) {
+        do {
+            try valsService.addEntry(entry)
+            valsEntries = try valsService.loadEntries()
+        } catch {
+            errorMessage = "Failed to add key: \(error.localizedDescription)"
+        }
+    }
+
+    func updateValsEntry(_ entry: ValsEntry) {
+        do {
+            try valsService.updateEntry(entry)
+            valsEntries = try valsService.loadEntries()
+        } catch {
+            errorMessage = "Failed to update key: \(error.localizedDescription)"
+        }
+    }
+
+    func deleteValsEntry(key: String) {
+        do {
+            try valsService.deleteEntry(key: key)
+            valsEntries = try valsService.loadEntries()
+        } catch {
+            errorMessage = "Failed to delete key: \(error.localizedDescription)"
+        }
+    }
+
+    func addValsSourceToZshrc() {
+        do {
+            try valsService.addSourceToZshrc()
+            isValsSourcedInZshrc = valsService.isSourcedInZshrc
+        } catch {
+            errorMessage = "Failed to update .zshrc: \(error.localizedDescription)"
         }
     }
 

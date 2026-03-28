@@ -162,11 +162,6 @@ struct ToolBadge: View {
     let tool: ToolKind
 
     var body: some View {
-        Text(tool.shortName)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(tool.badgeColor, in: Capsule())
+        ToolIconBadge(tool: tool)
     }
 }

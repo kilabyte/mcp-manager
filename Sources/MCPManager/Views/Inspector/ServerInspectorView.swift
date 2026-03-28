@@ -66,8 +66,7 @@ struct ServerInspectorView: View {
                     Text("Present In").font(.headline)
                     ForEach(Array(server.presentIn).sorted(by: { $0.rawValue < $1.rawValue })) { tool in
                         HStack {
-                            Image(systemName: tool.sfSymbol)
-                                .foregroundStyle(tool.badgeColor)
+                            ToolIconView(tool: tool, size: 18)
                                 .frame(width: 20)
                             Text(tool.displayName)
                             Spacer()
@@ -92,8 +91,13 @@ struct ServerInspectorView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Master").font(.subheadline.weight(.medium))
                         Picker("Master", selection: $masterTool) {
-                            ForEach(Array(server.presentIn).sorted(by: { $0.rawValue < $1.rawValue })) { tool in
-                                Text(tool.displayName).tag(tool)
+                            ForEach(ToolKind.allCases.filter(\.isInstalled)) { tool in
+                                Label {
+                                    Text(tool.displayName)
+                                } icon: {
+                                    ToolIconView(tool: tool, size: 16)
+                                }
+                                .tag(tool)
                             }
                         }
                         .labelsHidden()
@@ -110,8 +114,7 @@ struct ServerInspectorView: View {
                                 }
                             )) {
                                 HStack {
-                                    Image(systemName: tool.sfSymbol)
-                                        .foregroundStyle(tool.badgeColor)
+                                    ToolIconView(tool: tool, size: 18)
                                         .frame(width: 20)
                                     Text(tool.displayName)
                                     if !tool.isInstalled {

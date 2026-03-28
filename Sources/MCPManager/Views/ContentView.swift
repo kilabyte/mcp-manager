@@ -10,7 +10,9 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView()
         } detail: {
-            if viewModel.displayedServers.isEmpty {
+            if viewModel.sidebarSelection == .keychain {
+                KeychainView()
+            } else if viewModel.displayedServers.isEmpty {
                 EmptyStateView()
             } else {
                 ServerGridView()
