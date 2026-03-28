@@ -182,6 +182,10 @@ final class AppViewModel {
     // MARK: - Sync
 
     func updateSyncProfile(for serverName: String, master: ToolKind, replicas: [ToolKind]) {
+        // Pause file watchers so our own config writes don't trigger
+        // redundant loadAll() calls while we're still mid-update.
+        fileWatcher.stopAll()
+
         // Remove existing profile for this server
         syncProfiles.removeAll { $0.serverName == serverName }
 
@@ -207,6 +211,7 @@ final class AppViewModel {
             errorMessage = "Failed to save sync profiles: \(error.localizedDescription)"
         }
 
+        // Reload everything (also re-establishes file watchers).
         loadAll()
     }
 

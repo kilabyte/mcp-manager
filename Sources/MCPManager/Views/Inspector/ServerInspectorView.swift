@@ -17,6 +17,12 @@ struct ServerInspectorView: View {
     @State private var masterTool: ToolKind = .claudeDesktop
     @State private var replicaTools: Set<ToolKind> = []
 
+    /// Installed tools, guaranteed non-empty for the Picker.
+    private var installedTools: [ToolKind] {
+        let tools = ToolKind.allCases.filter(\.isInstalled)
+        return tools.isEmpty ? ToolKind.allCases : tools
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -91,7 +97,7 @@ struct ServerInspectorView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Master").font(.subheadline.weight(.medium))
                         Picker("Master", selection: $masterTool) {
-                            ForEach(ToolKind.allCases.filter(\.isInstalled)) { tool in
+                            ForEach(installedTools) { tool in
                                 Label {
                                     Text(tool.displayName)
                                 } icon: {
@@ -193,12 +199,19 @@ struct ServerInspectorView: View {
         envPairs = server.server.env.map { EditableEnvPair(key: $0.key, value: $0.value) }
             .sorted(by: { $0.key < $1.key })
 
-        // Load sync profile
+        // Load sync profile, clamping master to an installed tool so the Picker never crashes.
+        let installed = installedTools
         if let profile = viewModel.syncProfile(for: server.name) {
-            masterTool = profile.masterTool
+            masterTool = installed.contains(profile.masterTool)
+                ? profile.masterTool
+                : installed.first ?? .claudeDesktop
             replicaTools = Set(profile.replicaTools)
-        } else if let firstTool = server.presentIn.sorted(by: { $0.rawValue < $1.rawValue }).first {
+        } else if let firstTool = server.presentIn.sorted(by: { $0.rawValue < $1.rawValue }).first,
+                  installed.contains(firstTool) {
             masterTool = firstTool
+            replicaTools = []
+        } else {
+            masterTool = installed.first ?? .claudeDesktop
             replicaTools = []
         }
 

@@ -10,10 +10,10 @@ final class DiscoveryService: Sendable {
         ToolKind.allCases.filter(\.isInstalled)
     }
 
-    /// Discovers all installed tools and loads their configurations.
+    /// Discovers installed tools and loads their configurations.
     func discoverAllConfigs() -> [ToolConfig] {
         var configs: [ToolConfig] = []
-        for tool in ToolKind.allCases {
+        for tool in discoverInstalledTools() {
             if let config = try? configService.readConfig(for: tool) {
                 configs.append(config)
             }
