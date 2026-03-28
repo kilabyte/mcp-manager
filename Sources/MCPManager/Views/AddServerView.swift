@@ -125,7 +125,7 @@ struct AddServerView: View {
             }
             .padding(20)
         }
-        .frame(width: 500, minHeight: 550)
+        .frame(minWidth: 500, minHeight: 550)
         .onAppear {
             // Pre-select installed tools
             selectedTools = Set(ToolKind.allCases.filter(\.isInstalled))

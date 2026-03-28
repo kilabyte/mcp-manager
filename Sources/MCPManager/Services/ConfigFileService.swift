@@ -4,7 +4,7 @@ import Foundation
 final class ConfigFileService: Sendable {
 
     private let parser = ConfigParser()
-    private let fm = FileManager.default
+    private nonisolated(unsafe) let fm = FileManager.default
 
     // MARK: - Backup
 
