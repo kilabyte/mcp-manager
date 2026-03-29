@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ServerInspectorView: View {
@@ -11,6 +12,7 @@ struct ServerInspectorView: View {
     @State private var args: [String] = []
     @State private var envPairs: [EditableEnvPair] = []
     @State private var showDeleteConfirmation = false
+    @State private var showOpenConfigPicker = false
     @State private var hasChanges = false
 
     // Sync state
@@ -167,6 +169,13 @@ struct ServerInspectorView: View {
                     .disabled(!hasChanges)
                     .keyboardShortcut("s")
 
+                    Button {
+                        openConfig()
+                    } label: {
+                        Label("Open Config", systemImage: "doc.text")
+                    }
+                    .buttonStyle(.bordered)
+
                     Spacer()
 
                     Button("Delete Server", role: .destructive) {
@@ -189,6 +198,28 @@ struct ServerInspectorView: View {
             }
         } message: {
             Text("This will remove \"\(server.name)\" from all tools. This action cannot be undone.")
+        }
+        .confirmationDialog(
+            "Open Config File",
+            isPresented: $showOpenConfigPicker,
+            titleVisibility: .visible
+        ) {
+            ForEach(Array(server.presentIn).sorted(by: { $0.rawValue < $1.rawValue })) { tool in
+                Button(tool.displayName) {
+                    NSWorkspace.shared.open(tool.configFilePath)
+                }
+            }
+        } message: {
+            Text("This server is present in \(server.presentIn.count) tools. Choose which config file to open.")
+        }
+    }
+
+    private func openConfig() {
+        let tools = Array(server.presentIn).sorted(by: { $0.rawValue < $1.rawValue })
+        if tools.count == 1, let tool = tools.first {
+            NSWorkspace.shared.open(tool.configFilePath)
+        } else {
+            showOpenConfigPicker = true
         }
     }
 
