@@ -25,6 +25,10 @@ final class ConfigFileService: Sendable {
         let timestamp = formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
         let backupURL = backupDir.appendingPathComponent("\(timestamp).json")
 
+        // Skip if a backup for this exact timestamp already exists (same operation
+        // writing to the same tool more than once in a second — treat as no-op).
+        guard !fm.fileExists(atPath: backupURL.path) else { return backupURL }
+
         try fm.copyItem(at: configPath, to: backupURL)
         return backupURL
     }
@@ -109,8 +113,12 @@ final class ConfigFileService: Sendable {
         try writeConfig(config)
     }
 
-    func updateServer(_ server: MCPServer, in tool: ToolKind) throws {
+    func updateServer(_ server: MCPServer, in tool: ToolKind, replacingKey oldKey: String? = nil) throws {
         var config = try readConfig(for: tool)
+        // If the server was renamed, remove the old entry first
+        if let oldKey, oldKey != server.name {
+            config.servers.removeValue(forKey: oldKey)
+        }
         config.servers[server.name] = server
         try writeConfig(config)
     }

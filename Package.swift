@@ -7,7 +7,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "MCPManager",
-            path: "Sources/MCPManager"
+            path: "Sources/MCPManager",
+            linkerSettings: [
+                .linkedFramework("Security")
+            ]
         )
     ]
 )

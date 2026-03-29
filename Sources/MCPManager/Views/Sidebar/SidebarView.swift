@@ -45,11 +45,6 @@ struct SidebarView: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(.quaternary, in: Capsule())
-                        if !viewModel.isValsSourcedInZshrc {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.yellow)
-                                .font(.caption)
-                        }
                     }
                 } icon: {
                     Image(systemName: "key.fill")

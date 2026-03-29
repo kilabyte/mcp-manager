@@ -20,9 +20,9 @@ Download the latest `MCP-Manager.zip` from [Releases](https://github.com/kilabyt
 - Keep server configs consistent across your entire workflow without manual copy-paste
 
 ### Environment Key Manager
-- Manage API tokens and secrets in `~/.config/vals.zsh`
+- Store API tokens and secrets securely in the **macOS Keychain** (not a plaintext file)
 - Add, edit, delete, copy, and reveal/hide values
-- Detects whether `.zshrc` sources the file and offers a one-click fix
+- Keys are injected into your environment via `launchctl setenv` every time MCP Manager launches, so Claude Desktop, Cursor, and other GUI-launched tools automatically inherit them — no shell sourcing required
 
 ### Import / Export
 - Import MCP server configurations from JSON files
@@ -70,8 +70,9 @@ Sources/MCPManager/
 │   ├── ConfigParser        # Parses JSON config formats
 │   ├── DiscoveryService    # Discovers installed tools and their configs
 │   ├── FileWatcherService  # Watches config files for external changes
+│   ├── KeychainService     # Stores env keys in macOS Keychain + launchctl injection
 │   ├── SyncService         # Handles master/replica sync between tools
-│   └── ValsFileService     # Manages ~/.config/vals.zsh environment keys
+│   └── ValsFileService     # Legacy vals.zsh reader (migration use only)
 ├── ViewModels/             # AppViewModel (central state)
 └── Views/                  # SwiftUI views
     ├── Cards/              # Server grid cards

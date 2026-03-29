@@ -11,14 +11,10 @@ struct KeychainView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Zshrc status banner
-            if !viewModel.isValsSourcedInZshrc {
-                zshrcBanner
-            }
-
             if viewModel.valsEntries.isEmpty {
                 emptyState
             } else {
+                infoBanner
                 entryList
             }
         }
@@ -48,33 +44,28 @@ struct KeychainView: View {
                 viewModel.deleteValsEntry(key: entry.key)
             }
         } message: { entry in
-            Text("This will remove \"\(entry.key)\" from vals.zsh. MCP servers referencing this variable will lose access to it.")
+            Text("This will remove \"\(entry.key)\" from the macOS Keychain. MCP servers referencing this variable will lose access to it.")
         }
     }
 
     // MARK: - Subviews
 
-    private var zshrcBanner: some View {
+    private var infoBanner: some View {
         HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.yellow)
+            Image(systemName: "lock.shield.fill")
+                .foregroundStyle(.blue)
             VStack(alignment: .leading, spacing: 2) {
-                Text("vals.zsh is not sourced in your .zshrc")
+                Text("Stored in macOS Keychain")
                     .font(.headline)
-                Text("Your MCP servers won't see these environment variables until .zshrc sources the file.")
+                Text("Keys are injected into your environment each time MCP Manager launches, so Claude Desktop, Cursor, and other tools can read them.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Fix Now") {
-                viewModel.addValsSourceToZshrc()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
         }
         .padding(12)
-        .background(.yellow.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-        .padding()
+        .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .padding([.horizontal, .top])
     }
 
     private var emptyState: some View {
@@ -86,7 +77,7 @@ struct KeychainView: View {
             Text("No Environment Keys")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Text("Add API tokens and secrets here. MCP servers can reference\nthem as environment variables.")
+            Text("Add API tokens and secrets here. They're stored in your\nmacOS Keychain and injected as environment variables.")
                 .font(.body)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -253,7 +244,7 @@ private struct KeyEntryEditor: View {
                         .font(.body.monospaced())
                 }
 
-                Text("This will be stored in ~/.config/vals.zsh as an export.")
+                Text("Stored securely in your macOS Keychain. MCP Manager injects it into your environment at launch.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

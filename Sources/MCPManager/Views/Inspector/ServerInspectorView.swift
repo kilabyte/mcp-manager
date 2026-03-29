@@ -232,7 +232,7 @@ struct ServerInspectorView: View {
             isEnabled: server.server.isEnabled
         )
 
-        viewModel.updateServer(updatedServer, in: Array(server.presentIn))
+        viewModel.updateServer(updatedServer, replacing: server.name, in: Array(server.presentIn))
         hasChanges = false
     }
 }

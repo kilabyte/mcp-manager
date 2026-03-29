@@ -41,16 +41,16 @@ final class AppViewModel {
     var showAddServerSheet: Bool = false
     var showInspector: Bool = false
 
-    // Keychain / vals.zsh state
+    // Keychain (macOS Keychain via KeychainService)
     var valsEntries: [ValsEntry] = []
-    var isValsSourcedInZshrc: Bool = false
 
     // MARK: - Services
 
     private let configService = ConfigFileService()
     private let discoveryService = DiscoveryService()
     private let syncService = SyncService()
-    private let valsService = ValsFileService()
+    private let keychainService = KeychainService()
+    private let valsService = ValsFileService()   // kept for one-time migration only
     let fileWatcher = FileWatcherService()
 
     // MARK: - Computed
@@ -126,9 +126,13 @@ final class AppViewModel {
         toolConfigs = discoveryService.discoverAllConfigs()
         syncProfiles = (try? syncService.loadProfiles()) ?? []
 
-        // Load keychain entries
-        valsEntries = (try? valsService.loadEntries()) ?? []
-        isValsSourcedInZshrc = valsService.isSourcedInZshrc
+        // Migrate any legacy vals.zsh entries into Keychain on first run
+        keychainService.migrateFromValsFileIfNeeded(valsService)
+
+        // Load Keychain entries and push them into the launchd env so GUI-launched
+        // MCP servers (Claude Desktop, Cursor, etc.) can read them.
+        valsEntries = keychainService.loadEntries()
+        keychainService.injectAllIntoEnvironment()
 
         setupFileWatchers()
         isLoading = false
@@ -145,15 +149,10 @@ final class AppViewModel {
         }
     }
 
-    func updateServer(_ server: MCPServer, in tools: [ToolKind]) {
+    func updateServer(_ server: MCPServer, replacing oldName: String? = nil, in tools: [ToolKind]) {
         do {
             for tool in tools {
-                try configService.updateServer(server, in: tool)
-            }
-            // If this server has a sync profile and we're editing the master, propagate
-            if let profile = syncService.profile(for: server.name, in: syncProfiles),
-               tools.contains(profile.masterTool) {
-                try syncService.syncServer(named: server.name, profile: profile)
+                try configService.updateServer(server, in: tool, replacingKey: oldName)
             }
             loadAll()
         } catch {
@@ -241,8 +240,8 @@ final class AppViewModel {
 
     func addValsEntry(_ entry: ValsEntry) {
         do {
-            try valsService.addEntry(entry)
-            valsEntries = try valsService.loadEntries()
+            try keychainService.addEntry(entry)
+            valsEntries = keychainService.loadEntries()
         } catch {
             errorMessage = "Failed to add key: \(error.localizedDescription)"
         }
@@ -250,8 +249,8 @@ final class AppViewModel {
 
     func updateValsEntry(_ entry: ValsEntry) {
         do {
-            try valsService.updateEntry(entry)
-            valsEntries = try valsService.loadEntries()
+            try keychainService.updateEntry(entry)
+            valsEntries = keychainService.loadEntries()
         } catch {
             errorMessage = "Failed to update key: \(error.localizedDescription)"
         }
@@ -259,19 +258,10 @@ final class AppViewModel {
 
     func deleteValsEntry(key: String) {
         do {
-            try valsService.deleteEntry(key: key)
-            valsEntries = try valsService.loadEntries()
+            try keychainService.deleteEntry(key: key)
+            valsEntries = keychainService.loadEntries()
         } catch {
             errorMessage = "Failed to delete key: \(error.localizedDescription)"
-        }
-    }
-
-    func addValsSourceToZshrc() {
-        do {
-            try valsService.addSourceToZshrc()
-            isValsSourcedInZshrc = valsService.isSourcedInZshrc
-        } catch {
-            errorMessage = "Failed to update .zshrc: \(error.localizedDescription)"
         }
     }
 
