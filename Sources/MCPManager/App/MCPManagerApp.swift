@@ -18,6 +18,7 @@ struct MCPManagerApp: App {
                 .environment(viewModel)
                 .onAppear {
                     viewModel.loadAll()
+                    viewModel.loadKeychain()
                 }
         }
         .defaultSize(width: 1100, height: 700)

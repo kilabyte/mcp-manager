@@ -126,16 +126,18 @@ final class AppViewModel {
         toolConfigs = discoveryService.discoverAllConfigs()
         syncProfiles = (try? syncService.loadProfiles()) ?? []
 
-        // Migrate any legacy vals.zsh entries into Keychain on first run
-        keychainService.migrateFromValsFileIfNeeded(valsService)
-
-        // Load Keychain entries and push them into the launchd env so GUI-launched
-        // MCP servers (Claude Desktop, Cursor, etc.) can read them.
-        valsEntries = keychainService.loadEntries()
-        keychainService.injectAllIntoEnvironment()
-
         setupFileWatchers()
         isLoading = false
+    }
+
+    /// Call once at app startup. Migrates any vals.zsh entries into the
+    /// Keychain, loads the entries into state, and injects them all into the
+    /// launchd env so GUI-launched MCP servers can read them immediately.
+    /// Kept separate from loadAll() so Keychain I/O never blocks config reloads.
+    func loadKeychain() {
+        keychainService.migrateFromValsFileIfNeeded(valsService)
+        valsEntries = keychainService.loadEntries()
+        keychainService.injectAllIntoEnvironment()
     }
 
     func addServer(_ server: MCPServer, to tools: [ToolKind]) {

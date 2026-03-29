@@ -8,7 +8,6 @@ import Security
 final class KeychainService: Sendable {
 
     static let keychainService = "com.mcp-manager"
-    private static let migrationKey = "keychainMigratedFromVals"
 
     // MARK: - CRUD
 
@@ -38,32 +37,38 @@ final class KeychainService: Sendable {
     }
 
     func addEntry(_ entry: ValsEntry) throws {
-        // Try to update first; if not found, add new.
-        let query: [CFString: Any] = [
+        // Delete any existing item first to avoid ACL conflicts from prior builds.
+        let deleteQuery: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: Self.keychainService,
             kSecAttrAccount: entry.key
         ]
-        let attributes: [CFString: Any] = [
+        SecItemDelete(deleteQuery as CFDictionary)  // ignore result — may not exist
+
+        // Build an access object that allows ANY application to read this item
+        // without prompting. Passing nil for trustedList means "all apps trusted"
+        // (per SecAccessCreate docs). This prevents rebuild-to-rebuild ACL prompts.
+        var access: SecAccess?
+        SecAccessCreate("MCP Manager Secrets" as CFString, nil, &access)
+
+        var addQuery: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: Self.keychainService,
+            kSecAttrAccount: entry.key,
             kSecValueData: Data(entry.value.utf8)
         ]
-
-        let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-
-        if updateStatus == errSecItemNotFound {
-            var addQuery = query
-            addQuery[kSecValueData] = Data(entry.value.utf8)
-            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-            guard addStatus == errSecSuccess else { throw KeychainError.osStatus(addStatus) }
-        } else if updateStatus != errSecSuccess {
-            throw KeychainError.osStatus(updateStatus)
+        if let access {
+            addQuery[kSecAttrAccess] = access
         }
+
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
+        guard status == errSecSuccess else { throw KeychainError.osStatus(status) }
 
         injectIntoLaunchEnvironment(key: entry.key, value: entry.value)
     }
 
     func updateEntry(_ entry: ValsEntry) throws {
-        try addEntry(entry)   // add already handles upsert
+        try addEntry(entry)   // add handles delete-then-insert (with correct ACL)
     }
 
     func deleteEntry(key: String) throws {
@@ -112,15 +117,16 @@ final class KeychainService: Sendable {
 
     // MARK: - Migration from vals.zsh
 
-    /// Silently imports any existing ~/.config/vals.zsh entries into the
-    /// Keychain the first time the app runs with this feature. Safe to call
-    /// every launch — a UserDefaults flag prevents re-running.
+    /// Idempotent: checks which vals.zsh keys are missing from the Keychain
+    /// and imports them. Safe to call every launch — it's a no-op once all
+    /// entries are present. Handles the case where a previous migration
+    /// silently failed due to Keychain ACL issues.
     func migrateFromValsFileIfNeeded(_ valsService: ValsFileService) {
-        guard !UserDefaults.standard.bool(forKey: Self.migrationKey) else { return }
-        defer { UserDefaults.standard.set(true, forKey: Self.migrationKey) }
+        guard let valsEntries = try? valsService.loadEntries(),
+              !valsEntries.isEmpty else { return }
 
-        guard let entries = try? valsService.loadEntries(), !entries.isEmpty else { return }
-        for entry in entries {
+        let existingKeys = Set(loadEntries().map(\.key))
+        for entry in valsEntries where !existingKeys.contains(entry.key) {
             try? addEntry(entry)
         }
     }
