@@ -83,4 +83,4 @@ Sources/MCPManager/
 
 ## License
 
-MIT
+Free to use, modify, and distribute for any purpose — including commercially as a tool. You may not sell this software or charge for it directly. See [LICENSE](LICENSE) for full terms.
