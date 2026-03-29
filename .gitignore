@@ -17,3 +17,15 @@ Package.resolved
 
 # App data
 *.app
+
+# Credentials — never commit these
+*.p8
+*.p12
+*.pem
+*.key
+*.cer
+*.mobileprovision
+*.keystore
+.env
+.env.*
+api_key.json
