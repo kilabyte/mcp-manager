@@ -28,6 +28,41 @@ Download the latest `MCP-Manager.zip` from [Releases](https://github.com/kilabyt
 - Import MCP server configurations from JSON files
 - Export all servers to a shareable JSON format
 
+---
+
+## Using Environment Keys in MCP Servers
+
+Keys stored in the **Keychain** section can be referenced directly by name in any MCP server's environment variables. MCP Manager injects them into the macOS launch environment each time it starts, so the values are available to all tools without ever being written to a config file.
+
+### 1. Add a key in the Keychain section
+
+Open MCP Manager → click **Keychain** in the sidebar → click **+** to add a key.
+
+For example, add:
+
+| Key | Value |
+|-----|-------|
+| `OPENAI_API_KEY` | `sk-...` |
+| `GITHUB_TOKEN` | `ghp_...` |
+
+### 2. Reference the key in an MCP server's environment
+
+Open the server in the inspector → go to the **Environment** tab → add a variable using the same key name and `$KEY_NAME` as the value:
+
+| Variable | Value |
+|----------|-------|
+| `OPENAI_API_KEY` | `$OPENAI_API_KEY` |
+
+> **How it works:** MCP Manager calls `launchctl setenv OPENAI_API_KEY <actual value>` at startup. This sets the variable in the macOS launch environment. When Claude Desktop, Cursor, or any other GUI-launched tool starts an MCP server subprocess, it inherits that environment — so `$OPENAI_API_KEY` resolves to the real value automatically.
+
+### 3. Keep MCP Manager running at login
+
+For the injection to be in place before you open Claude Desktop or Cursor, add MCP Manager to **System Settings → General → Login Items**. That way the keys are always available from the moment you log in.
+
+> **Note:** The actual secret values are never written to your MCP config files — only the variable name reference (e.g., `$OPENAI_API_KEY`) appears in JSON. The secrets live exclusively in the macOS Keychain.
+
+---
+
 ## Supported Tools
 
 | Tool | Config Path |
