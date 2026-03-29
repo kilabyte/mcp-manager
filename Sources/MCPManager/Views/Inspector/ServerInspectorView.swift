@@ -69,23 +69,12 @@ struct ServerInspectorView: View {
 
                 Divider()
 
-                // Installed In (read-only indicators)
-                VStack(alignment: .leading, spacing: 8) {
+                // Installed In — click any row to open that tool's config file
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Present In").font(.headline)
                     ForEach(Array(server.presentIn).sorted(by: { $0.rawValue < $1.rawValue })) { tool in
-                        HStack {
-                            ToolIconView(tool: tool, size: 18)
-                                .frame(width: 20)
-                            Text(tool.displayName)
-                            Spacer()
-                            if viewModel.isReplica(tool: tool, serverName: server.name) {
-                                Text("replica")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(.quaternary, in: Capsule())
-                            }
+                        PresentInRow(tool: tool, isReplica: viewModel.isReplica(tool: tool, serverName: server.name)) {
+                            NSWorkspace.shared.open(tool.configFilePath)
                         }
                     }
                 }
@@ -267,6 +256,51 @@ struct ServerInspectorView: View {
         hasChanges = false
     }
 }
+
+// MARK: - Present In Row
+
+private struct PresentInRow: View {
+    let tool: ToolKind
+    let isReplica: Bool
+    let onTap: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 8) {
+                ToolIconView(tool: tool, size: 18)
+                    .frame(width: 20)
+                Text(tool.displayName)
+                    .foregroundStyle(.primary)
+                if isReplica {
+                    Text("replica")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.quaternary, in: Capsule())
+                }
+                Spacer()
+                Image(systemName: "arrow.up.right.square")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .opacity(isHovering ? 1 : 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovering ? Color.accentColor.opacity(0.08) : .clear)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help("Open \(tool.displayName) config file")
+    }
+}
+
+// MARK: - Editable Env Pair
 
 struct EditableEnvPair: Identifiable, Equatable {
     let id = UUID()
