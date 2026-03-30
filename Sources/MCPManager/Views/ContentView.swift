@@ -10,15 +10,20 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView()
         } detail: {
-            if viewModel.sidebarSelection == .keychain {
+            switch viewModel.sidebarSelection {
+            case .keychain:
                 KeychainView()
-            } else if viewModel.displayedServers.isEmpty {
-                EmptyStateView()
-            } else {
-                ServerGridView()
+            case .commands(let kind):
+                CommandListView(kind: kind)
+            case .allServers, .tool:
+                if viewModel.displayedServers.isEmpty {
+                    EmptyStateView()
+                } else {
+                    ServerGridView()
+                }
             }
         }
-        .searchable(text: $vm.searchText, prompt: "Search servers...")
+        .searchable(text: $vm.searchText, prompt: searchPrompt)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
@@ -56,6 +61,14 @@ struct ContentView: View {
             Button("OK") { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+    }
+
+    private var searchPrompt: String {
+        switch viewModel.sidebarSelection {
+        case .commands(let kind): "Search \(kind.displayName.lowercased())..."
+        case .keychain: "Search keys..."
+        default: "Search servers..."
         }
     }
 

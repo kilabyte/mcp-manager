@@ -33,6 +33,14 @@ struct SidebarView: View {
                 }
             }
 
+            // Commands & Configuration
+            Section("Commands & Configuration") {
+                ForEach(CommandKind.allCases) { kind in
+                    CommandKindRow(kind: kind, count: viewModel.commandCount(for: kind))
+                        .tag(SidebarSelection.commands(kind))
+                }
+            }
+
             // Keychain
             Section("Keychain") {
                 Label {
@@ -54,6 +62,32 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .navigationTitle("MCP Manager")
+    }
+}
+
+// MARK: - Command Kind Row
+
+private struct CommandKindRow: View {
+    let kind: CommandKind
+    let count: Int
+
+    var body: some View {
+        Label {
+            HStack {
+                Text(kind.displayName)
+                Spacer()
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.quaternary, in: Capsule())
+                }
+            }
+        } icon: {
+            Image(systemName: kind.sfSymbol)
+        }
     }
 }
 

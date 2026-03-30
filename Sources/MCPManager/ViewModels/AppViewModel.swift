@@ -23,6 +23,7 @@ enum SidebarSelection: Hashable {
     case allServers
     case tool(ToolKind)
     case keychain
+    case commands(CommandKind)
 }
 
 @Observable
@@ -44,6 +45,14 @@ final class AppViewModel {
     // Keychain (macOS Keychain via KeychainService)
     var valsEntries: [ValsEntry] = []
 
+    // Commands, Rules & Hooks
+    var slashCommands: [CommandItem] = []
+    var rules: [CommandItem] = []
+    var hooks: [CommandItem] = []
+    var showAddCommandSheet: Bool = false
+    var selectedCommandItem: CommandItem?
+    var showCommandInspector: Bool = false
+
     // MARK: - Services
 
     private let configService = ConfigFileService()
@@ -51,6 +60,7 @@ final class AppViewModel {
     private let syncService = SyncService()
     private let keychainService = KeychainService()
     private let valsService = ValsFileService()   // kept for one-time migration only
+    private let commandService = CommandService()
     let fileWatcher = FileWatcherService()
 
     // MARK: - Computed
@@ -89,7 +99,7 @@ final class AppViewModel {
             servers = unifiedServers
         case .tool(let tool):
             servers = unifiedServers.filter { $0.presentIn.contains(tool) }
-        case .keychain:
+        case .keychain, .commands:
             servers = []
         }
 
@@ -117,6 +127,30 @@ final class AppViewModel {
         toolConfigs.first { $0.tool == tool }?.serverCount ?? 0
     }
 
+    /// Commands filtered by the current sidebar selection's command kind and search.
+    func displayedCommands(for kind: CommandKind) -> [CommandItem] {
+        let source: [CommandItem]
+        switch kind {
+        case .slashCommand: source = slashCommands
+        case .rule: source = rules
+        case .hook: source = hooks
+        }
+
+        if searchText.isEmpty { return source }
+        return source.filter { item in
+            item.name.localizedCaseInsensitiveContains(searchText)
+            || item.content.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    func commandCount(for kind: CommandKind) -> Int {
+        switch kind {
+        case .slashCommand: slashCommands.count
+        case .rule: rules.count
+        case .hook: hooks.count
+        }
+    }
+
     // MARK: - Actions
 
     func loadAll() {
@@ -125,9 +159,16 @@ final class AppViewModel {
 
         toolConfigs = discoveryService.discoverAllConfigs()
         syncProfiles = (try? syncService.loadProfiles()) ?? []
+        loadCommands()
 
         setupFileWatchers()
         isLoading = false
+    }
+
+    func loadCommands() {
+        slashCommands = commandService.discoverCommands(kind: .slashCommand)
+        rules = commandService.discoverCommands(kind: .rule)
+        hooks = commandService.discoverCommands(kind: .hook)
     }
 
     /// Call once at app startup. Migrates any vals.zsh entries into the
@@ -264,6 +305,39 @@ final class AppViewModel {
             valsEntries = keychainService.loadEntries()
         } catch {
             errorMessage = "Failed to delete key: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - Commands, Rules & Hooks
+
+    func addCommand(_ item: CommandItem) {
+        do {
+            try commandService.addCommand(item)
+            loadCommands()
+        } catch {
+            errorMessage = "Failed to add \(item.kind.singularName.lowercased()): \(error.localizedDescription)"
+        }
+    }
+
+    func updateCommand(_ item: CommandItem, oldName: String? = nil) {
+        do {
+            try commandService.updateCommand(item, oldName: oldName)
+            loadCommands()
+        } catch {
+            errorMessage = "Failed to update \(item.kind.singularName.lowercased()): \(error.localizedDescription)"
+        }
+    }
+
+    func deleteCommand(_ item: CommandItem) {
+        do {
+            try commandService.deleteCommand(item)
+            if selectedCommandItem?.id == item.id {
+                selectedCommandItem = nil
+                showCommandInspector = false
+            }
+            loadCommands()
+        } catch {
+            errorMessage = "Failed to delete \(item.kind.singularName.lowercased()): \(error.localizedDescription)"
         }
     }
 
