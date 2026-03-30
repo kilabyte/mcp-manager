@@ -1,9 +1,9 @@
 import Foundation
 
 /// Discovers and manages slash commands, rules, and hooks across supported platforms.
-struct CommandService: Sendable {
+final class CommandService: Sendable {
 
-    private let fm = FileManager.default
+    private nonisolated(unsafe) let fm = FileManager.default
 
     // MARK: - Discovery
 
