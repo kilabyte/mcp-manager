@@ -42,6 +42,10 @@ final class AppViewModel {
     var showAddServerSheet: Bool = false
     var showInspector: Bool = false
 
+    // Update checking
+    var updateAvailableVersion: String?
+    var updateDismissed: Bool = false
+
     // Keychain (macOS Keychain via KeychainService)
     var valsEntries: [ValsEntry] = []
 
@@ -61,6 +65,7 @@ final class AppViewModel {
     private let keychainService = KeychainService()
     private let valsService = ValsFileService()   // kept for one-time migration only
     private let commandService = CommandService()
+    private let updateService = UpdateService()
     let fileWatcher = FileWatcherService()
 
     // MARK: - Computed
@@ -339,6 +344,22 @@ final class AppViewModel {
         } catch {
             errorMessage = "Failed to delete \(item.kind.singularName.lowercased()): \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Update Checking
+
+    var showUpdateBanner: Bool {
+        updateAvailableVersion != nil && !updateDismissed
+    }
+
+    func checkForUpdate() async {
+        if let version = await updateService.checkForUpdate() {
+            updateAvailableVersion = version
+        }
+    }
+
+    func dismissUpdate() {
+        updateDismissed = true
     }
 
     // MARK: - Import / Export

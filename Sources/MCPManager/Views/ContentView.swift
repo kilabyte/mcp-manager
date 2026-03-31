@@ -10,17 +10,29 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView()
         } detail: {
-            switch viewModel.sidebarSelection {
-            case .keychain:
-                KeychainView()
-            case .commands(let kind):
-                CommandListView(kind: kind)
-            case .allServers, .tool:
-                if viewModel.displayedServers.isEmpty {
-                    EmptyStateView()
-                } else {
-                    ServerGridView()
+            VStack(spacing: 0) {
+                if viewModel.showUpdateBanner,
+                   let version = viewModel.updateAvailableVersion {
+                    UpdateBannerView(latestVersion: version) {
+                        viewModel.dismissUpdate()
+                    }
                 }
+
+                Group {
+                    switch viewModel.sidebarSelection {
+                    case .keychain:
+                        KeychainView()
+                    case .commands(let kind):
+                        CommandListView(kind: kind)
+                    case .allServers, .tool:
+                        if viewModel.displayedServers.isEmpty {
+                            EmptyStateView()
+                        } else {
+                            ServerGridView()
+                        }
+                    }
+                }
+                .frame(maxHeight: .infinity)
             }
         }
         .searchable(text: $vm.searchText, prompt: searchPrompt)
@@ -53,6 +65,9 @@ struct ContentView: View {
                 ServerInspectorView(server: server)
                     .inspectorColumnWidth(min: 320, ideal: 380, max: 450)
             }
+        }
+        .task {
+            await viewModel.checkForUpdate()
         }
         .alert("Error", isPresented: .init(
             get: { viewModel.errorMessage != nil },

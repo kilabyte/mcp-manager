@@ -11,7 +11,12 @@ CONTENTS="$APP_DIR/Contents"
 MACOS="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
 
-echo "Building..."
+# Derive version from git tag (v1.2.3 → 1.2.3), fall back to 1.0.0
+GIT_TAG=$(git -C "$ROOT" describe --tags --exact-match 2>/dev/null || true)
+APP_VERSION="${GIT_TAG#v}"
+APP_VERSION="${APP_VERSION:-1.0.0}"
+
+echo "Building (version ${APP_VERSION})..."
 cd "$ROOT"
 swift build 2>&1
 
@@ -43,7 +48,7 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>${APP_VERSION}</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
