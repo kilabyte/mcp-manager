@@ -27,7 +27,7 @@ final class SyncService: Sendable {
 
         // Pretty print for human readability
         if let json = try? JSONSerialization.jsonObject(with: data),
-           let pretty = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+           let pretty = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]) {
             try pretty.write(to: path, options: .atomic)
         } else {
             try data.write(to: path, options: .atomic)

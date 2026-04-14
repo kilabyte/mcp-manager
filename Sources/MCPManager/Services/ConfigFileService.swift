@@ -99,7 +99,7 @@ final class ConfigFileService: Sendable {
         let emptyConfig: [String: Any] = [tool.rootKey: [:] as [String: Any]]
         let data = try JSONSerialization.data(
             withJSONObject: emptyConfig,
-            options: [.prettyPrinted, .sortedKeys]
+            options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         )
         try data.write(to: configPath, options: .atomic)
         return configPath

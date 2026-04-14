@@ -373,7 +373,7 @@ final class AppViewModel {
             dict[server.name] = obj.filter { _, v in !(v is NSNull) }
         }
         let wrapper: [String: Any] = ["mcpServers": dict]
-        return try? JSONSerialization.data(withJSONObject: wrapper, options: [.prettyPrinted, .sortedKeys])
+        return try? JSONSerialization.data(withJSONObject: wrapper, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
     }
 
     func importServers(from data: Data) -> [MCPServer]? {

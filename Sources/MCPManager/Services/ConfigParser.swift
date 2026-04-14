@@ -84,7 +84,7 @@ struct ConfigParser {
 
         let data = try JSONSerialization.data(
             withJSONObject: json,
-            options: [.prettyPrinted, .sortedKeys]
+            options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         )
         return data
     }

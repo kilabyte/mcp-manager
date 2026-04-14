@@ -162,7 +162,7 @@ final class CommandService: Sendable {
 
                     // Serialize the hook definition back to readable JSON
                     let content: String
-                    if let jsonData = try? JSONSerialization.data(withJSONObject: hookDef, options: [.prettyPrinted, .sortedKeys]),
+                    if let jsonData = try? JSONSerialization.data(withJSONObject: hookDef, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
                        let jsonStr = String(data: jsonData, encoding: .utf8) {
                         content = jsonStr
                     } else {
@@ -219,7 +219,7 @@ final class CommandService: Sendable {
         hooks[eventName] = eventHooks
         json["hooks"] = hooks
 
-        let data = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+        let data = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         try data.write(to: settingsPath, options: .atomic)
     }
 
@@ -238,7 +238,7 @@ final class CommandService: Sendable {
         hooks.removeValue(forKey: eventName)
         json["hooks"] = hooks.isEmpty ? nil : hooks
 
-        let updated = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+        let updated = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         try updated.write(to: settingsPath, options: .atomic)
     }
 
