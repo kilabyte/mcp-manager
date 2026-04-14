@@ -6,10 +6,17 @@ struct AddServerView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
+    @State private var transportType = TransportType.stdio
     @State private var command = ""
+    @State private var url = ""
     @State private var argsText = "" // newline-separated for simplicity
     @State private var envPairs: [EnvPair] = []
     @State private var selectedTools: Set<ToolKind> = []
+
+    enum TransportType: String, CaseIterable {
+        case stdio = "Command (stdio)"
+        case url = "URL (SSE / HTTP)"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,33 +35,48 @@ struct AddServerView: View {
             // Form
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Name & Command
+                    // Name & Transport
                     VStack(alignment: .leading, spacing: 12) {
                         LabeledField("Server Name") {
                             TextField("e.g. filesystem", text: $name)
                                 .textFieldStyle(.roundedBorder)
                         }
+
+                        Picker("Transport", selection: $transportType) {
+                            ForEach(TransportType.allCases, id: \.self) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    // Command + Args (stdio) or URL
+                    if transportType == .stdio {
                         LabeledField("Command") {
                             TextField("e.g. npx, uvx, node", text: $command)
                                 .textFieldStyle(.roundedBorder)
                         }
-                    }
 
-                    // Arguments
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Arguments")
-                            .font(.headline)
-                        Text("One argument per line")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        TextEditor(text: $argsText)
-                            .font(.body.monospaced())
-                            .frame(minHeight: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 6)
-                                    .strokeBorder(.quaternary)
-                            }
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Arguments")
+                                .font(.headline)
+                            Text("One argument per line")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            TextEditor(text: $argsText)
+                                .font(.body.monospaced())
+                                .frame(minHeight: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .strokeBorder(.quaternary)
+                                }
+                        }
+                    } else {
+                        LabeledField("URL") {
+                            TextField("https://...", text: $url)
+                                .textFieldStyle(.roundedBorder)
+                        }
                     }
 
                     // Environment Variables
@@ -136,28 +158,39 @@ struct AddServerView: View {
     }
 
     private var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty
-        && !command.trimmingCharacters(in: .whitespaces).isEmpty
-        && !selectedTools.isEmpty
+        let hasName = !name.trimmingCharacters(in: .whitespaces).isEmpty
+        let hasConnection = transportType == .stdio
+            ? !command.trimmingCharacters(in: .whitespaces).isEmpty
+            : !url.trimmingCharacters(in: .whitespaces).isEmpty
+        return hasName && hasConnection && !selectedTools.isEmpty
     }
 
     private func addServer() {
-        let args = argsText
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-
         var env: [String: String] = [:]
         for pair in envPairs where !pair.key.isEmpty {
             env[pair.key] = pair.value
         }
 
-        let server = MCPServer(
-            name: name.trimmingCharacters(in: .whitespaces),
-            command: command.trimmingCharacters(in: .whitespaces),
-            args: args,
-            env: env
-        )
+        let server: MCPServer
+        if transportType == .url {
+            server = MCPServer(
+                name: name.trimmingCharacters(in: .whitespaces),
+                url: url.trimmingCharacters(in: .whitespaces),
+                env: env
+            )
+        } else {
+            let args = argsText
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+
+            server = MCPServer(
+                name: name.trimmingCharacters(in: .whitespaces),
+                command: command.trimmingCharacters(in: .whitespaces),
+                args: args,
+                env: env
+            )
+        }
 
         viewModel.addServer(server, to: Array(selectedTools))
         dismiss()

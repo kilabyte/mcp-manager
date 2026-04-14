@@ -34,8 +34,10 @@ struct ConfigParser {
         var result: [String: MCPServer] = [:]
         for (name, value) in serversDict {
             guard let serverDict = value as? [String: Any] else { continue }
-            let entryData = try JSONSerialization.data(withJSONObject: serverDict)
-            let entry = try JSONDecoder().decode(ServerEntry.self, from: entryData)
+            guard let entryData = try? JSONSerialization.data(withJSONObject: serverDict),
+                  let entry = try? JSONDecoder().decode(ServerEntry.self, from: entryData) else {
+                continue
+            }
             result[name] = entry.toMCPServer(name: name)
         }
         return result
@@ -61,7 +63,10 @@ struct ConfigParser {
         // Build the servers subtree
         var serversDict: [String: Any] = [:]
         for (name, server) in servers {
-            let entry = ServerEntry.from(server, type: tool.requiresTypeField ? "stdio" : nil)
+            let typeOverride: String? = tool.requiresTypeField
+                ? (server.isURLBased ? "sse" : "stdio")
+                : nil
+            let entry = ServerEntry.from(server, type: typeOverride)
             let entryData = try JSONEncoder().encode(entry)
             guard var entryDict = try JSONSerialization.jsonObject(with: entryData) as? [String: Any] else {
                 continue

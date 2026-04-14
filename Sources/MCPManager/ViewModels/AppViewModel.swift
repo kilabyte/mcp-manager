@@ -111,7 +111,7 @@ final class AppViewModel {
         if !searchText.isEmpty {
             servers = servers.filter { server in
                 server.name.localizedCaseInsensitiveContains(searchText)
-                || server.server.command.localizedCaseInsensitiveContains(searchText)
+                || server.server.displayCommand.localizedCaseInsensitiveContains(searchText)
             }
         }
 

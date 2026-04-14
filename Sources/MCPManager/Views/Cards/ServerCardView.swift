@@ -44,11 +44,16 @@ struct ServerCardView: View {
                 .frame(width: 24)
             }
 
-            // Command
+            // Command or URL
             HStack(spacing: 4) {
-                Text("$")
-                    .foregroundStyle(.tertiary)
-                Text(commandString)
+                if server.server.isURLBased {
+                    Image(systemName: "link")
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text("$")
+                        .foregroundStyle(.tertiary)
+                }
+                Text(server.server.displayCommand)
                     .lineLimit(2)
                     .truncationMode(.middle)
             }
@@ -136,7 +141,7 @@ struct ServerCardView: View {
     }
 
     private var commandString: String {
-        ([server.server.command] + server.server.args).joined(separator: " ")
+        server.server.displayCommand
     }
 
     private var isSelected: Bool {
@@ -144,13 +149,14 @@ struct ServerCardView: View {
     }
 
     private func duplicateServer() {
-        var copy = server.server
-        copy = MCPServer(
+        let original = server.server
+        let copy = MCPServer(
             name: "\(server.name)-copy",
-            command: copy.command,
-            args: copy.args,
-            env: copy.env,
-            isEnabled: copy.isEnabled
+            command: original.command,
+            args: original.args,
+            url: original.url,
+            env: original.env,
+            isEnabled: original.isEnabled
         )
         viewModel.addServer(copy, to: Array(server.presentIn))
     }

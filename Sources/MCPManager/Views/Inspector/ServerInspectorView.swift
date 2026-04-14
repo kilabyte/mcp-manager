@@ -9,6 +9,7 @@ struct ServerInspectorView: View {
 
     @State private var name: String = ""
     @State private var command: String = ""
+    @State private var url: String = ""
     @State private var args: [String] = []
     @State private var envPairs: [EditableEnvPair] = []
     @State private var showDeleteConfirmation = false
@@ -51,17 +52,26 @@ struct ServerInspectorView: View {
                         .onChange(of: name) { hasChanges = true }
                 }
 
-                // Command
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Command").font(.headline)
-                    TextField("Command", text: $command)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: command) { hasChanges = true }
-                }
+                // Command or URL
+                if server.server.isURLBased {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("URL").font(.headline)
+                        TextField("https://...", text: $url)
+                            .textFieldStyle(.roundedBorder)
+                            .onChange(of: url) { hasChanges = true }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Command").font(.headline)
+                        TextField("Command", text: $command)
+                            .textFieldStyle(.roundedBorder)
+                            .onChange(of: command) { hasChanges = true }
+                    }
 
-                // Arguments
-                ArgsEditorView(args: $args)
-                    .onChange(of: args) { hasChanges = true }
+                    // Arguments
+                    ArgsEditorView(args: $args)
+                        .onChange(of: args) { hasChanges = true }
+                }
 
                 // Environment Variables
                 EnvironmentEditorView(pairs: $envPairs)
@@ -214,7 +224,8 @@ struct ServerInspectorView: View {
 
     private func loadServerData() {
         name = server.name
-        command = server.server.command
+        command = server.server.command ?? ""
+        url = server.server.url ?? ""
         args = server.server.args
         envPairs = server.server.env.map { EditableEnvPair(key: $0.key, value: $0.value) }
             .sorted(by: { $0.key < $1.key })
@@ -244,13 +255,23 @@ struct ServerInspectorView: View {
             env[pair.key] = pair.value
         }
 
-        let updatedServer = MCPServer(
-            name: name,
-            command: command,
-            args: args,
-            env: env,
-            isEnabled: server.server.isEnabled
-        )
+        let updatedServer: MCPServer
+        if server.server.isURLBased {
+            updatedServer = MCPServer(
+                name: name,
+                url: url,
+                env: env,
+                isEnabled: server.server.isEnabled
+            )
+        } else {
+            updatedServer = MCPServer(
+                name: name,
+                command: command,
+                args: args,
+                env: env,
+                isEnabled: server.server.isEnabled
+            )
+        }
 
         viewModel.updateServer(updatedServer, replacing: server.name, in: Array(server.presentIn))
         hasChanges = false
