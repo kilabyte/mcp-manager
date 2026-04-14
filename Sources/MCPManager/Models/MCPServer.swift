@@ -68,21 +68,12 @@ struct ServerEntry: Codable {
     }
 
     static func from(_ server: MCPServer, type: String? = nil) -> ServerEntry {
-        let resolvedType: String?
-        if let type {
-            resolvedType = type
-        } else if server.isURLBased {
-            resolvedType = "sse"
-        } else {
-            resolvedType = nil
-        }
-
-        return ServerEntry(
+        ServerEntry(
             command: server.command,
             args: server.args.isEmpty ? nil : server.args,
             url: server.url,
             env: server.env.isEmpty ? nil : server.env,
-            type: resolvedType,
+            type: type,
             disabled: server.isEnabled ? nil : true
         )
     }
