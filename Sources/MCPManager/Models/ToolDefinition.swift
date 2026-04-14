@@ -85,6 +85,12 @@ enum ToolKind: String, CaseIterable, Identifiable, Codable, Sendable {
         self == .vscodeCopilot
     }
 
+    /// True when the tool only supports stdio transport and URL-based servers
+    /// must be wrapped with mcp-remote as a bridge.
+    var stdioOnly: Bool {
+        self == .claudeDesktop
+    }
+
     /// Expanded config file path on macOS.
     var configFilePath: URL {
         let home = FileManager.default.homeDirectoryForCurrentUser
