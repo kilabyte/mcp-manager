@@ -72,23 +72,58 @@ enum ToolKind: String, CaseIterable, Identifiable, Codable, Sendable {
         return NSWorkspace.shared.icon(forFile: appURL.path)
     }
 
-    /// The JSON root key that holds MCP server definitions.
-    var rootKey: String {
+    // MARK: - Config Format
+
+    /// Describes how a tool structures its MCP server config entries.
+    struct ConfigFormat {
+        /// JSON root key that holds the server definitions.
+        let rootKey: String
+        /// Whether the tool natively supports URL (SSE/HTTP) transport.
+        /// When false, URL servers are bridged through mcp-remote.
+        let supportsURL: Bool
+        /// Whether each entry must include a `type` field ("stdio"/"sse").
+        let includesType: Bool
+    }
+
+    /// Per-tool config format rules. This is the single source of truth for
+    /// how each tool expects its MCP server entries to be structured.
+    var configFormat: ConfigFormat {
         switch self {
-        case .vscodeCopilot: "servers"
-        default: "mcpServers"
+        case .claudeDesktop: ConfigFormat(rootKey: "mcpServers", supportsURL: false, includesType: false)
+        case .claudeCode:    ConfigFormat(rootKey: "mcpServers", supportsURL: true,  includesType: false)
+        case .cursor:        ConfigFormat(rootKey: "mcpServers", supportsURL: true,  includesType: false)
+        case .windsurf:      ConfigFormat(rootKey: "mcpServers", supportsURL: true,  includesType: false)
+        case .vscodeCopilot: ConfigFormat(rootKey: "servers",    supportsURL: true,  includesType: true)
         }
     }
 
-    /// Whether VS Code requires the `type` field on each server entry.
-    var requiresTypeField: Bool {
-        self == .vscodeCopilot
-    }
+    /// Shorthand for the JSON root key.
+    var rootKey: String { configFormat.rootKey }
 
-    /// True when the tool only supports stdio transport and URL-based servers
-    /// must be wrapped with mcp-remote as a bridge.
-    var stdioOnly: Bool {
-        self == .claudeDesktop
+    /// Produce the correct ServerEntry for this tool's config format.
+    /// Handles transport bridging (mcp-remote) and type field injection.
+    func serverEntry(for server: MCPServer) -> ServerEntry {
+        let format = configFormat
+
+        // Bridge URL servers through mcp-remote for stdio-only tools
+        if server.isURLBased && !format.supportsURL, let url = server.url {
+            return ServerEntry(
+                command: "npx",
+                args: ["-y", "mcp-remote", url],
+                env: server.env.isEmpty ? nil : server.env,
+                type: format.includesType ? "stdio" : nil,
+                disabled: server.isEnabled ? nil : true
+            )
+        }
+
+        return ServerEntry(
+            command: server.command,
+            args: server.args.isEmpty ? nil : server.args,
+            url: server.url,
+            env: server.env.isEmpty ? nil : server.env,
+            type: format.includesType ? (server.isURLBased ? "sse" : "stdio") : nil,
+            disabled: server.isEnabled ? nil : true
+        )
     }
 
     /// Expanded config file path on macOS.

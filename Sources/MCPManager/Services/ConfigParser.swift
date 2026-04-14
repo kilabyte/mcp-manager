@@ -60,28 +60,10 @@ struct ConfigParser {
             json = [:]
         }
 
-        // Build the servers subtree
+        // Build the servers subtree — each tool defines its own entry format.
         var serversDict: [String: Any] = [:]
         for (name, server) in servers {
-            // Wrap URL-based servers with mcp-remote for stdio-only tools
-            let adapted: MCPServer
-            if server.isURLBased && tool.stdioOnly, let url = server.url {
-                adapted = MCPServer(
-                    id: server.id,
-                    name: server.name,
-                    command: "npx",
-                    args: ["-y", "mcp-remote", url],
-                    env: server.env,
-                    isEnabled: server.isEnabled
-                )
-            } else {
-                adapted = server
-            }
-
-            let typeOverride: String? = tool.requiresTypeField
-                ? (adapted.isURLBased ? "sse" : "stdio")
-                : nil
-            let entry = ServerEntry.from(adapted, type: typeOverride)
+            let entry = tool.serverEntry(for: server)
             let entryData = try JSONEncoder().encode(entry)
             guard var entryDict = try JSONSerialization.jsonObject(with: entryData) as? [String: Any] else {
                 continue
